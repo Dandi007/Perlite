@@ -282,17 +282,78 @@ function menu($dir, $folder = '')
   return $html;
 }
 
+// === vault-search 语义检索接入（agent-knowledge 服务，本机 18082） ===
+// 调本机 vault-search 做语义检索；不可达/异常回落原字面 search()。
+// Perlite 公网（gate-auth 后）可达，故排除 memory/（含基建/凭证指针）。
+function vaultSearchQuery($searchfor)
+{
+	$payload = json_encode([
+		'query'  => $searchfor,
+		'top_k'  => 20,
+		'filter' => ['exclude' => ['memory']],
+	], JSON_UNESCAPED_UNICODE);
+
+	$ctx = stream_context_create(['http' => [
+		'method'        => 'POST',
+		'header'        => "Content-Type: application/json\r\n",
+		'content'       => $payload,
+		'timeout'       => 5,
+		'ignore_errors' => true,
+	]]);
+	$raw = @file_get_contents('http://127.0.0.1:18082/search', false, $ctx);
+	if ($raw === false) {
+		return null; // 服务不可达 → 降级到字面搜索
+	}
+	$data = json_decode($raw, true);
+	if (!is_array($data) || !isset($data['results']) || !is_array($data['results'])) {
+		return null;
+	}
+	return $data['results'];
+}
+
+// 把服务结果 [{path,score,snippet}] 渲染成 Perlite 搜索树项（与 search() 同结构）。
+function renderVaultSearchResults($results)
+{
+	$out = '';
+	foreach ($results as $r) {
+		if (!isset($r['path']) || $r['path'] === '') {
+			continue;
+		}
+		// 服务路径 = notes 相对路径含 .md；Perlite pathClean 去扩展名。
+		$pathClean = preg_replace('/\.md$/', '', $r['path']);
+		$urlPathClean = rawurlencode($pathClean);
+		$display = htmlspecialchars(str_replace('/', ' / ', $pathClean));
+		$snippet = (isset($r['snippet']) && $r['snippet'] !== '') ? $r['snippet'] : $pathClean;
+		$snippet = htmlspecialchars($snippet);
+
+		$out .= '
+		<br>
+		<div class="tree-item search-result is-collapsed">
+			<div class="tree-item-self search-result-file-title is-clickable">
+				<div class="tree-item-icon collapse-icon" onclick="toggleSearchEntry(event);" style="">
+					<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="svg-icon right-triangle">
+						<path d="M3 8L12 17L21 8"></path>
+					</svg>
+				</div>
+				<div class="tree-item-inner" onclick="getContent(\'/' . $urlPathClean . '\');">' . $display . '</div>
+			</div>
+		<div class="search-result-file-matches" style="display: none">
+		<div style="width: 1px; height: 0.1px; margin-bottom: 0px;"></div><div class="search-result-file-match"><span>' . $snippet . '</span></div>
+		</div>
+	</div>';
+	}
+	return $out;
+}
+
 function doSearch($dir, $searchfor)
 {
-
-	// $Parsedown = new Parsedown();
-	// $Parsedown->setSafeMode(false);
-
-	//$cleanSearch = htmlspecialchars($searchfor, ENT_QUOTES);
-
-	$result = search($dir, $searchfor);
-	$content = $result;
-	//$content = $Parsedown->text($result);
+	// 优先 vault-search 语义检索；服务不可达/异常 → 回落原字面搜索（搜索框永不全挂）。
+	$results = vaultSearchQuery($searchfor);
+	if ($results !== null) {
+		$content = renderVaultSearchResults($results);
+	} else {
+		$content = search($dir, $searchfor);
+	}
 
 	if ($content === '') {
 		$content = '<div class="search-empty-state">No matches found.</div>';
