@@ -52,6 +52,22 @@ $jsonGraphData = getfullGraph($rootDir);
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="笔记">
     <link rel="apple-touch-icon" sizes="180x180" href="<?php echo $uriPath ?>apple-touch-icon-180x180.png">
+    <style>
+      /* PWA standalone（iOS 加到主屏幕 / 安卓已安装）下，black-translucent 状态栏 +
+         viewport-fit=cover 会让内容 edge-to-edge 顶到状态栏/刘海下方。Perlite 走的是
+         Obsidian 桌面布局（body 无 .is-mobile、titlebar 隐藏），自身没有任何
+         env(safe-area-inset-*) 兜底 → 顶栏被状态栏盖住。仅在 standalone 模式下给根
+         容器补 safe-area padding；浏览器内正常浏览（含 Safari）不受影响。 */
+      @media (display-mode: standalone) {
+        .app-container {
+          box-sizing: border-box;
+          padding-top: env(safe-area-inset-top);
+          padding-bottom: env(safe-area-inset-bottom);
+          padding-left: env(safe-area-inset-left);
+          padding-right: env(safe-area-inset-right);
+        }
+      }
+    </style>
     <script>
       if ("serviceWorker" in navigator && window.isSecureContext) {
         window.addEventListener("load", function () {
