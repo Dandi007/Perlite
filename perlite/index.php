@@ -42,6 +42,25 @@ $jsonGraphData = getfullGraph($rootDir);
     <link rel="stylesheet" href="<?php echo $uriPath ?>.styles/katex.min.css" type="text/css">
     <link rel="icon" type="image/x-icon" href="<?php echo $uriPath ?>favicon.ico">
 
+    <!-- PWA：让安卓 Chrome 可安装为移动端 App（local-patch，非上游）。 -->
+    <!-- crossorigin=use-credentials：manifest 默认 credentials=omit，经 gate-auth 会被
+         302 跳登录、加载失败；带上才会发 gate cookie → 200。 -->
+    <link rel="manifest" href="<?php echo $uriPath ?>manifest.webmanifest" crossorigin="use-credentials">
+    <meta name="theme-color" content="#4c3a8c">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="笔记">
+    <link rel="apple-touch-icon" sizes="180x180" href="<?php echo $uriPath ?>apple-touch-icon-180x180.png">
+    <script>
+      if ("serviceWorker" in navigator && window.isSecureContext) {
+        window.addEventListener("load", function () {
+          navigator.serviceWorker.register("<?php echo $uriPath ?>sw.js", { scope: "<?php echo $uriPath ?>" })
+            .catch(function (err) { console.warn("SW registration failed:", err); });
+        });
+      }
+    </script>
+
     <script src="<?php echo $uriPath ?>.js/jquery.min.js"></script>
 
     <script src="<?php echo $uriPath ?>.js/vis-network.min.js"></script>
