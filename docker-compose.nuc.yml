@@ -1,0 +1,32 @@
+# NUC (e300-nuc) Docker 部署 —— 从本 fork 构建带 patch 的镜像，服务 git clone 的 vault 快照。
+# 经 ECS edge-gateway Caddy 反代 notes.qinglinzhang.top（gate-auth 鉴权）。不用 svc/systemd。
+#
+# 与上游 docker-compose.yml 的差异：
+#   - perlite 服务 build 本地 Dockerfile（含 vault-search/PWA patch + 烘入 settings.php），
+#     而非 pull 无 patch 的 sec77/perlite:latest。
+#   - notes 根 bind-mount git clone 的 /data/vault（:ro），settings.php $rootDir="notes"。
+#   - web 端口只绑 tailnet IP + 本地回环，不绑 0.0.0.0（vault 含敏感内容，安全边界=ECS gate-auth）。
+#
+# 用法：docker compose -f docker-compose.nuc.yml up -d --build
+services:
+  perlite:
+    build: ./perlite
+    image: perlite-zettelkasten:local
+    container_name: perlite
+    restart: unless-stopped
+    volumes:
+      - /data/vault:/var/www/perlite/notes:ro
+
+  web:
+    image: nginx:stable
+    container_name: perlite_web
+    restart: unless-stopped
+    ports:
+      - "100.64.0.6:8088:80"   # tailnet：ECS Caddy 经此反代
+      - "127.0.0.1:8088:80"    # 本地健康检查
+    volumes:
+      - ./web/config/perlite.conf:/etc/nginx/conf.d/default.conf:ro
+    volumes_from:
+      - perlite
+    depends_on:
+      - perlite

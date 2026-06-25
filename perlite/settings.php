@@ -9,9 +9,9 @@
 
 
 // --- General Settings ---
-$rootDir = "Demo";
-$index = "README";
-$siteTitle = "Perlite";
+$rootDir = "notes";
+$index = "WIKI";
+$siteTitle = "Zettelkasten";
 
 
 // --- Frontend Settings ---
@@ -20,7 +20,7 @@ $disablePopHovers = false;
 $showTOC = true;
 $showLocalGraph = true;
 $font_size = "15";
-$hideFolders = "docs,trash";
+$hideFolders = "";
 $niceLinks = true;
 
 
