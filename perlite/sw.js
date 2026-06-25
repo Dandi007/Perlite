@@ -1,7 +1,7 @@
 // perlite service worker —— 仅为让安卓 Chrome 可安装（需注册带 fetch handler
 // 的 SW）并给壳/静态资源做离线兜底。笔记内容与搜索是动态的，一律不缓存：
 // 只 SWR 缓存 .js/ 、.styles/ 与 PWA 图标这类静态壳资源；导航走 network-first。
-const SHELL_CACHE = "perlite-shell-v1";
+const SHELL_CACHE = "perlite-shell-v2";
 
 const STATIC_RE = /^\/(\.js\/|\.styles\/|pwa-|apple-touch-icon|favicon|manifest\.webmanifest)/;
 

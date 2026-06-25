@@ -234,6 +234,9 @@ function getContent(str, home = false, popHover = false, anchor = "") {
             target = slugURL(str)
             window.history.pushState({}, "", location.protocol + '//' + location.host + uriPath + target + anchor);
 
+            // local-patch: 记住当前笔记(getContent 的 str 原值),供下次启动恢复位置
+            try { localStorage.setItem('perliteLastNote', str); } catch (e) {}
+
           }
 
           // add Tag section
@@ -1276,8 +1279,16 @@ $(document).ready(function () {
 
   } else {
 
-    // load index page
-    getContent("home", true);
+    // local-patch: 优先恢复上次浏览的笔记(replay getContent 的 str 原值),无则回首页
+    var lastNote = null;
+    try { lastNote = localStorage.getItem('perliteLastNote'); } catch (e) {}
+    if (lastNote) {
+      getContent(lastNote, false, false, "");
+      openNavMenu(lastNote);
+    } else {
+      // load index page
+      getContent("home", true);
+    }
   }
   // on search submit
   $('*[type="search"]').on('keypress', function (e) {

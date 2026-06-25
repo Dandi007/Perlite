@@ -20,3 +20,8 @@ perlite/.scripts/canvas.js
 perlite/sec.jpg
 perlite/Demo/Demo Documents/test
 perlite/Demo/Demo Documents/test/*
+
+# nginx 运行时产物(只跟踪 perlite.conf)
+nginx/*.log
+nginx/*.pid
+.DS_Store
